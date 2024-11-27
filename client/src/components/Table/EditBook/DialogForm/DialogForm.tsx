@@ -6,11 +6,16 @@ import {
   DialogActions,
   Dialog,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  OutlinedInput,
 } from "@mui/material";
 import { FormikHelpers, useFormik } from "formik";
-import { useCallback } from "react";
+import { useCallback, useState, useMemo } from "react";
 import * as Yup from "yup";
-import { Book } from "../../../../types";
+import { Book, BaseBook } from "../../../../types";
 import { useUpdateBook } from "../../../../hooks/useUpdateBook";
 
 interface DialogFormProps {
@@ -19,18 +24,43 @@ interface DialogFormProps {
   onClose: () => void;
 }
 
-type FormValues = Omit<Book, "id">;
+type FormValues = Omit<BaseBook, "id"> & {
+  pages?: number;
+  minutes?: number;
+};
 
 const DialogForm = (props: DialogFormProps) => {
   const { open, onClose, book } = props;
+  const [type, setType] = useState<"Audio" | "Paper">(
+    "minutes" in book ? "Audio" : "Paper"
+  );
   const { id, ...rest } = book;
+
   const { updateBook, isUpdating } = useUpdateBook();
 
-  const formSchema = Yup.object().shape({
-    title: Yup.string().required("Required"),
-    author: Yup.string().required("Required"),
-    genre: Yup.string().required("Required"),
-  });
+  const initialValues: FormValues = useMemo(() => {
+    return {
+      ...rest,
+    };
+  }, [rest]);
+  const formSchema = useMemo(() => {
+    return Yup.object().shape({
+      title: Yup.string().required("Required"),
+      author: Yup.string().required("Required"),
+      genre: Yup.string().required("Required"),
+      ...(type === "Audio"
+        ? {
+            minutes: Yup.number()
+              .moreThan(0, "Minutes must be more than 0")
+              .required("Required"),
+          }
+        : {
+            pages: Yup.number()
+              .moreThan(0, "Pages must be more than 0")
+              .required("Required"),
+          }),
+    });
+  }, [type]);
 
   const handleSubmit = useCallback(
     async (values: FormValues, props: FormikHelpers<FormValues>) => {
@@ -46,7 +76,7 @@ const DialogForm = (props: DialogFormProps) => {
   );
 
   const formik = useFormik({
-    initialValues: rest,
+    initialValues,
     validationSchema: formSchema,
     validateOnChange: false,
     validateOnBlur: false,
@@ -100,6 +130,48 @@ const DialogForm = (props: DialogFormProps) => {
             error={Boolean(formik.errors.genre)}
             helperText={formik.errors.genre}
           />
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Type</InputLabel>
+            <Select
+              disabled={true}
+              value={type}
+              onChange={(e) => setType(e.target.value as "Audio" | "Paper")}
+              input={<OutlinedInput label="Type" />}
+            >
+              <MenuItem value="Audio">Audio</MenuItem>
+              <MenuItem value="Paper">Paper</MenuItem>
+            </Select>
+          </FormControl>
+          {type === "Audio" && (
+            <TextField
+              label={"Minutes"}
+              name="minutes"
+              type="number"
+              fullWidth
+              variant="outlined"
+              margin="dense"
+              value={formik.values.minutes}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={Boolean(formik.errors.minutes)}
+              helperText={formik.errors.minutes}
+            />
+          )}
+          {type === "Paper" && (
+            <TextField
+              label={"Pages"}
+              name="pages"
+              type="number"
+              fullWidth
+              variant="outlined"
+              margin="dense"
+              value={formik.values.pages}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={Boolean(formik.errors.pages)}
+              helperText={formik.errors.pages}
+            />
+          )}
           <TextField
             label="Description"
             name="briefDescription"

@@ -14,6 +14,7 @@ import {
 import { useGetBooks } from "../../hooks/useGetBooks";
 import DeleteBook from "./DeleteBook";
 import EditBook from "./EditBook";
+import { Book } from "../../types";
 
 interface TableCellAddedProps {
   minWidth: number;
@@ -57,7 +58,7 @@ const StyledTableRow = styled(TableRow)(() => ({
 }));
 
 interface Column {
-  id: "title" | "author" | "genre" | "briefDescription" | "actions";
+  id: "title" | "author" | "genre" | "briefDescription" | "actions" | "length";
   label: string;
   minWidth: number;
 }
@@ -66,6 +67,7 @@ const columns: readonly Column[] = [
   { id: "title", label: "Title", minWidth: 150 },
   { id: "author", label: "Author", minWidth: 100 },
   { id: "genre", label: "Genre", minWidth: 100 },
+  { id: "length", label: "Details", minWidth: 75 },
   { id: "briefDescription", label: "Description", minWidth: 150 },
   { id: "actions", label: "Actions", minWidth: 68 },
 ];
@@ -126,7 +128,23 @@ const BooksTable = () => {
                         </StyledActionsTableCell>
                       );
                     }
-                    const value = book[column.id];
+                    if (column.id === "length") {
+                      if ("minutes" in book) {
+                        return (
+                          <TableCell key={column.id}>
+                            {book["minutes"]} minutes
+                          </TableCell>
+                        );
+                      }
+                      if ("pages" in book) {
+                        return (
+                          <TableCell key={column.id}>
+                            {book["pages"]} pages
+                          </TableCell>
+                        );
+                      }
+                    }
+                    const value = book[column.id as keyof Book];
                     return <TableCell key={column.id}>{value}</TableCell>;
                   })}
                 </StyledTableRow>
